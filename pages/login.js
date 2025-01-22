@@ -20,7 +20,6 @@ export default function Login({role}) {
             password: password,
           }
         );
-  
         localStorage.setItem('token', response.data.jwt);
         router.push('/');
       } else {
