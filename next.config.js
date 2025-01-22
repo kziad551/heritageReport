@@ -2,6 +2,7 @@
 const nextConfig = {
     images: {
         domains: ['heritage.top-wp.com'],
+        unoptimized: true,
       },
 }
 
