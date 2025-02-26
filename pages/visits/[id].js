@@ -709,7 +709,7 @@ const VisitDetails = ({ visit }) => {
                 <h4>Ceiling</h4>
 
                 <div>
-                  <a>Rouf style:</a> {visits.internalroofstyle}
+                  <a>Roof style:</a> {visits.internalroofstyle}
                 </div>
                 <div>
                   <a>Material:</a> {visits.inCeillingMaterial}
