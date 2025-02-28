@@ -2,6 +2,8 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  scroll-behavior: auto;
+  overflow-anchor: none;
 }
 
 .header {
@@ -15,24 +17,33 @@
   margin-bottom: 1rem;
 }
 
-.editButton {
+.headerButtons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.editButton, .printButton {
   background-color: #3498db;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.5rem;
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.3s;
+  font-size: 1rem;
+  font-weight: 500;
 }
 
-.editButton:hover {
+.editButton:hover, .printButton:hover {
   background-color: #2980b9;
 }
 
 .section {
   background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
   padding: 2rem;
   margin-bottom: 2rem;
 }
@@ -43,6 +54,67 @@
   margin-bottom: 1.5rem;
   padding-bottom: 0.5rem;
   border-bottom: 2px solid #3498db;
+}
+
+.sectionTitleInput {
+  font-size: 1.5rem;
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border: none;
+  border-bottom: 2px solid #3498db;
+  width: 100%;
+  background: transparent;
+  font-family: inherit;
+  position: relative;
+  display: block;
+  outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  cursor: text;
+  z-index: 1;
+}
+
+.labelInput {
+  border: none;
+  background: transparent;
+  font-weight: 600;
+  color: #2c3e50;
+  width: 100%;
+  font-family: inherit;
+  position: relative;
+  display: block;
+  outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  cursor: text;
+  z-index: 1;
+}
+
+.sectionTitleInput:focus,
+.labelInput:focus {
+  outline: none;
+  border-color: #2980b9;
+  background: rgba(52, 152, 219, 0.05);
+  z-index: 2;
+}
+
+/* Remove all transitions and animations */
+.sectionTitleInput,
+.labelInput,
+.sectionTitleInput:focus,
+.labelInput:focus {
+  animation: none !important;
+  transform: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+  overflow-anchor: none !important;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
+  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
 }
 
 .grid {
@@ -75,7 +147,7 @@
 .imageContainer {
   position: relative;
   width: 100%;
-  padding-bottom: calc(75% + 60px); /* 4:3 aspect ratio plus space for controls */
+  padding-bottom: 100%;
   border-radius: 12px;
   background: #ffffff;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -87,7 +159,7 @@
   top: 0;
   left: 0;
   width: 100%;
-  height: calc(100% - 60px);
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -157,5 +229,110 @@
   
   .imageContainer {
     padding-bottom: calc(100% + 60px);
+  }
+}
+
+/* Print styles */
+@media print {
+  .container {
+    padding: 0;
+    margin: 0;
+  }
+
+  .header {
+    padding: 20px 0;
+    break-inside: avoid;
+  }
+
+  .headerButtons {
+    display: none;
+  }
+
+  .rotationControls {
+    display: none !important;
+  }
+
+  .section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 30px;
+    display: block;
+  }
+
+  .sectionTitle {
+    font-size: 18pt;
+    margin: 15px 0;
+    color: #2E74B5;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .infoItem {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .imageGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 20px;
+  }
+
+  .imageContainer {
+    padding-bottom: 75%;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 20px;
+  }
+
+  .imageWrapper {
+    height: 100%;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .image {
+    max-height: 100%;
+    object-fit: contain;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .title {
+    font-size: 24pt;
+    margin-bottom: 20px;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .label {
+    font-weight: bold;
+    color: #000;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .value {
+    color: #333;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Hide edit inputs when printing */
+  .labelInput {
+    border: none;
+    background: none;
+    font-weight: bold;
   }
 } 

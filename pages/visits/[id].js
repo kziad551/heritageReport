@@ -1,19 +1,65 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import Image from "next/image";
 import Head from "next/head";
 import styles from "../../styles/VisitDetails.module.css";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, ImageRun } from "docx";
+import { saveAs } from "file-saver";
+
+let pdfMake;
+let pdfFonts;
+
+// Define fonts
+const fonts = {
+  Cairo: {
+    normal: '/fonts/Cairo-Regular.ttf',
+    bold: '/fonts/Cairo-Regular.ttf',
+    italics: '/fonts/Cairo-Regular.ttf',
+    bolditalics: '/fonts/Cairo-Regular.ttf'
+  }
+};
+
+// Create vfs function
+const loadFonts = async () => {
+  try {
+    // Load Cairo font from local file using absolute path
+    const fontResponse = await fetch('/fonts/Cairo-Regular.ttf');
+    if (!fontResponse.ok) {
+      throw new Error('Failed to load font file');
+    }
+    const fontArrayBuffer = await fontResponse.arrayBuffer();
+
+    // Create VFS object with Cairo font
+    const vfs = {};
+    vfs['Cairo-Regular.ttf'] = fontArrayBuffer;
+
+    return vfs;
+  } catch (error) {
+    console.error('Error loading fonts:', error);
+    // Fallback to default fonts if loading fails
+    pdfMake.vfs = pdfFonts.vfs;
+    throw error;
+  }
+};
 
 const VisitDetails = ({ visit }) => {
   const [customLabels, setCustomLabels] = useState({});
+  const [customTitles, setCustomTitles] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [imageRotations, setImageRotations] = useState({});
   const router = useRouter();
   const baseUrl = "https://heritage.top-wp.com";
+  const loadedImages = useRef(new Map());
+  const [loadedImageUrls, setLoadedImageUrls] = useState(new Map());
+  const scrollPosition = useRef(0);
+  const [editingField, setEditingField] = useState(null);
+  const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
     const savedLabels = JSON.parse(localStorage.getItem("customLabels")) || {};
+    const savedTitles = JSON.parse(localStorage.getItem("customTitles")) || {};
     setCustomLabels(savedLabels);
+    setCustomTitles(savedTitles);
   }, []);
 
   useEffect(() => {
@@ -24,17 +70,66 @@ const VisitDetails = ({ visit }) => {
   }, []);
 
   const handleEditClick = () => {
+    if (isEditing) {
+      localStorage.setItem("customLabels", JSON.stringify(customLabels));
+      localStorage.setItem("customTitles", JSON.stringify(customTitles));
+    }
     setIsEditing(!isEditing);
   };
 
-  const handleLabelChange = (defaultLabel, newLabel) => {
-    const updatedLabels = { ...customLabels, [defaultLabel]: newLabel };
-    setCustomLabels(updatedLabels);
-    localStorage.setItem("customLabels", JSON.stringify(updatedLabels));
+  const handleLabelChange = (e, defaultLabel) => {
+    const value = e.target.value;
+    setCustomLabels(prev => ({
+      ...prev,
+      [defaultLabel]: value
+    }));
+  };
+
+  const handleTitleChange = (e, defaultTitle) => {
+    const value = e.target.value;
+    setCustomTitles(prev => ({
+      ...prev,
+      [defaultTitle]: value
+    }));
+  };
+
+  const handleInputFocus = (fieldId) => {
+    setEditingField(fieldId);
+  };
+
+  const handleInputBlur = () => {
+    setEditingField(null);
+  };
+
+  const handleInputKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.target.blur();
+    }
   };
 
   const getLabel = (defaultLabel) => {
     return customLabels[defaultLabel] || defaultLabel;
+  };
+
+  const getTitle = (defaultTitle) => {
+    return customTitles[defaultTitle] || defaultTitle;
+  };
+
+  const renderInput = (type, value, onChange, defaultValue) => {
+    return (
+      <input
+        type="text"
+        value={value}
+        onChange={onChange}
+        onFocus={() => handleInputFocus(defaultValue)}
+        onBlur={handleInputBlur}
+        onKeyDown={handleInputKeyDown}
+        className={type === 'title' ? styles.sectionTitleInput : styles.labelInput}
+        autoComplete="off"
+        spellCheck="false"
+      />
+    );
   };
 
   if (!visit) {
@@ -44,10 +139,40 @@ const VisitDetails = ({ visit }) => {
   const visitId = visit.data[0].id;
   const visits = visit.data[0].attributes;
 
+  // Helper function to fetch image as blob
+  const fetchImageAsBlob = async (url) => {
+    try {
+      const token = localStorage.getItem("token");
+      const encodedUrl = encodeURIComponent(url);
+      const response = await fetch(`/api/proxy-image?url=${encodedUrl}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      if (blob.size === 0) {
+        throw new Error('Empty image received');
+      }
+
+      return blob;
+    } catch (error) {
+      console.error('Error fetching image:', error);
+      throw new Error(`Image fetch failed: ${error.message}`);
+    }
+  };
+
   const ImageGrid = ({ images, title }) => {
     if (!images?.data?.length) return null;
     
-    const imageUrls = images.data.map(item => item.attributes.formats?.small?.url || item.attributes.url);
+    const imageUrls = images.data.map(item => {
+      const url = item.attributes.formats?.small?.url || item.attributes.url;
+      return url.startsWith('http') ? url : `${baseUrl}${url}`;
+    });
     
     const handleRotate = (index, direction) => {
       setImageRotations(prev => ({
@@ -56,9 +181,27 @@ const VisitDetails = ({ visit }) => {
       }));
     };
 
+    useEffect(() => {
+      // Add all image URLs to loadedImageUrls map once when component mounts
+      imageUrls.forEach((url, index) => {
+        setLoadedImageUrls(prev => {
+          if (!prev.has(`${title}-${index}`)) {
+            const newMap = new Map(prev);
+            newMap.set(`${title}-${index}`, url);
+            return newMap;
+          }
+          return prev;
+        });
+      });
+    }, [imageUrls, title]);
+
     return (
       <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>{title}</h3>
+        {isEditing ? (
+          renderInput('title', getTitle(title), (e) => handleTitleChange(e, title), title)
+        ) : (
+          <h3 className={styles.sectionTitle}>{getTitle(title)}</h3>
+        )}
         <div className={styles.imageGrid}>
           {imageUrls.map((url, index) => (
             <div key={index} className={styles.imageContainer}>
@@ -77,11 +220,13 @@ const VisitDetails = ({ visit }) => {
                 style={{ transform: `rotate(${imageRotations[title + index] || 0}deg)` }}
               >
                 <Image
-                  src={`${baseUrl}${url}`}
+                  src={url}
                   alt={`${title} ${index + 1}`}
                   layout="fill"
                   objectFit="contain"
                   className={styles.image}
+                  unoptimized={true}
+                  priority={true}
                 />
               </div>
             </div>
@@ -93,18 +238,17 @@ const VisitDetails = ({ visit }) => {
 
   const InfoSection = ({ title, items }) => (
     <div className={styles.section}>
-      <h3 className={styles.sectionTitle}>{title}</h3>
+      {isEditing ? (
+        renderInput('title', getTitle(title), (e) => handleTitleChange(e, title), title)
+      ) : (
+        <h3 className={styles.sectionTitle}>{getTitle(title)}</h3>
+      )}
       <div className={styles.grid}>
         {items.map(([label, value]) => (
           <div key={label} className={styles.infoItem}>
             <div className={styles.label}>
               {isEditing ? (
-                <input
-                  type="text"
-                  value={getLabel(label)}
-                  onChange={(e) => handleLabelChange(label, e.target.value)}
-                  className={styles.labelInput}
-                />
+                renderInput('label', getLabel(label), (e) => handleLabelChange(e, label), label)
               ) : (
                 getLabel(label)
               )}
@@ -116,17 +260,345 @@ const VisitDetails = ({ visit }) => {
     </div>
   );
 
+  const handleExport = async () => {
+    alert("Generating document... This may take a few moments.");
+
+    try {
+      // Create a new document with modern formatting
+      const doc = new Document({
+        sections: [{
+          properties: {
+            page: {
+              margin: {
+                top: 1440, // 1 inch
+                right: 1440,
+                bottom: 1440,
+                left: 1440
+              }
+            }
+          },
+          children: []
+        }]
+      });
+
+      // All content will be added to the children array
+      const children = [];
+
+      // Add cover page
+      children.push(
+        new Paragraph({
+          text: "Heritage Visit Report",
+          heading: HeadingLevel.TITLE,
+          spacing: { after: 300, before: 300 },
+          style: {
+            paragraph: {
+              alignment: "CENTER"
+            },
+            run: {
+              size: 48,
+              font: "Arial",
+              bold: true,
+              color: "2E74B5"
+            }
+          }
+        }),
+        new Paragraph({
+          text: `Visit ID: ${visitId}`,
+          spacing: { after: 300 },
+          style: {
+            paragraph: {
+              alignment: "CENTER"
+            },
+            run: {
+              size: 28,
+              font: "Arial"
+            }
+          }
+        }),
+        new Paragraph({
+          text: `Generated on ${new Date().toLocaleDateString()}`,
+          spacing: { after: 800 },
+          style: {
+            paragraph: {
+              alignment: "CENTER"
+            },
+            run: {
+              size: 24,
+              font: "Arial",
+              color: "666666"
+            }
+          }
+        }),
+        // Page break after cover
+        new Paragraph({
+          text: "",
+          pageBreakBefore: true
+        })
+      );
+
+      // Helper function to add content sections
+      const addContentSection = (title, data) => {
+        children.push(
+          new Paragraph({
+            text: title,
+            heading: HeadingLevel.HEADING_1,
+            spacing: { before: 400, after: 200 },
+            pageBreakBefore: true,
+            style: {
+              paragraph: {
+                alignment: "LEFT"
+              },
+              run: {
+                size: 32,
+                font: "Arial",
+                bold: true,
+                color: "2E74B5"
+              }
+            }
+          })
+        );
+
+        Object.entries(data).forEach(([label, value]) => {
+          children.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `${label}: `,
+                  bold: true,
+                  size: 24,
+                  font: "Arial",
+                  color: "000000"
+                }),
+                new TextRun({
+                  text: value?.toString() || "N/A",
+                  size: 24,
+                  font: "Arial",
+                  color: "333333"
+                })
+              ],
+              spacing: { before: 120, after: 120 },
+              style: {
+                paragraph: {
+                  spacing: {
+                    line: 360 // 1.5 line spacing
+                  }
+                }
+              }
+            })
+          );
+        });
+      };
+
+      // Add main content sections
+      addContentSection('Basic Information', {
+        "Visit ID": visitId,
+        "User": visits.user,
+        "Visit Date": visits.visitdate,
+        "Created Date": visits.createdAt
+      });
+
+      addContentSection('Site Description', {
+        "GPS Location": visits.gpsLocation,
+        "Governorate": visits.governorate,
+        "District": visits.district,
+        "City": visits.city,
+        "Street": visits.street,
+        "Plot Number": visits.plotNumber,
+        "Historical or Archaeological site": visits.historicalorarchaeologicalsite,
+        "Building Name": visits.buildingName,
+        "Build Date": visits.buildDate,
+        "Architectural Style": visits.architecturalStyle,
+        "Location type": visits.locationtype,
+        "Protection level": visits.protectionlevel,
+        "Site ownership": visits.siteOwnership,
+        "Owner's name": visits.ownerName,
+        "Responsible person": visits.responsiblePerson,
+        "Building height": visits.buildingHeight,
+        "Number of floors": visits.numberOfFloors,
+        "Category": visits.category,
+        "General Condition of the site": visits.generalConditionOfSite,
+        "The state of the site before the event": visits.stateBeforeTheEvent,
+        "Intangible Heritage activities": visits.intangibleHeritageActivities,
+        "Member of an internal organization": visits.memberofaninternalOrganization
+      });
+
+      // Helper function to add images with better layout
+      const addImagesToDoc = async (images, title) => {
+        if (images?.data?.length) {
+          children.push(
+            new Paragraph({
+              text: title,
+              heading: HeadingLevel.HEADING_2,
+              spacing: { before: 300, after: 200 },
+              style: {
+                paragraph: {
+                  alignment: "LEFT"
+                },
+                run: {
+                  size: 28,
+                  font: "Arial",
+                  bold: true,
+                  color: "2E74B5"
+                }
+              }
+            })
+          );
+
+          for (let i = 0; i < Math.min(images.data.length, 3); i++) {
+            try {
+              const imageKey = `${title}-${i}`;
+              let imageUrl = loadedImageUrls.get(imageKey);
+              
+              if (!imageUrl) {
+                const imageData = images.data[i];
+                const url = imageData.attributes.formats?.thumbnail?.url || 
+                           imageData.attributes.formats?.small?.url || 
+                           imageData.attributes.url;
+                imageUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+              }
+
+              const blob = await fetchImageAsBlob(imageUrl);
+              const arrayBuffer = await blob.arrayBuffer();
+              
+              children.push(
+                new Paragraph({
+                  children: [
+                    new ImageRun({
+                      data: arrayBuffer,
+                      transformation: {
+                        width: 700,
+                        height: 500
+                      }
+                    })
+                  ],
+                  spacing: { before: 120, after: 120 },
+                  style: {
+                    paragraph: {
+                      alignment: "CENTER"
+                    }
+                  }
+                })
+              );
+            } catch (error) {
+              console.error(`Error processing image ${i + 1} from ${title}:`, error);
+              children.push(
+                new Paragraph({
+                  text: `[Unable to load image ${i + 1} from ${title}]`,
+                  spacing: { before: 120, after: 120 },
+                  style: {
+                    paragraph: {
+                      alignment: "CENTER"
+                    },
+                    run: {
+                      size: 24,
+                      font: "Arial",
+                      color: "FF0000"
+                    }
+                  }
+                })
+              );
+            }
+          }
+        }
+      };
+
+      // Process images in a more organized way
+      const imageCategories = [
+        { images: visits.currentPhotoOfSite, title: "Current Site Photos" },
+        { images: visits.sitephotosBeforeEvent, title: "Site Photos Before Event" },
+        { images: visits.inFloorPhotos, title: "Floor Photos" },
+        { images: visits.exPhotos, title: "External Wall Photos" },
+        { images: visits.roofPhotos, title: "Roof Photos" },
+        { images: visits.outsidePhotos, title: "Outside Photos" },
+        { images: visits.entrancePhotos, title: "Entrance Photos" },
+        { images: visits.externalPhotos, title: "External Photos" },
+        { images: visits.structuralPhotos, title: "Structural Photos" },
+        { images: visits.inWallsPhotos, title: "Internal Wall Photos" },
+        { images: visits.infeatureditemsphotos, title: "Featured Items Photos" },
+        { images: visits.inCeillingPhotos2, title: "Ceiling Photos" },
+        { images: visits.archaeologicalremainsphotos, title: "Archaeological Remains Photos" },
+        { images: visits.generalPhotosBuilding, title: "General Building Photos" }
+      ];
+
+      // Add images section
+      children.push(
+        new Paragraph({
+          text: "Site Documentation",
+          heading: HeadingLevel.HEADING_1,
+          pageBreakBefore: true,
+          spacing: { before: 400, after: 200 },
+          style: {
+            paragraph: {
+              alignment: "LEFT"
+            },
+            run: {
+              size: 32,
+              font: "Arial",
+              bold: true,
+              color: "2E74B5"
+            }
+          }
+        })
+      );
+
+      console.log('Processing image categories...');
+      for (const category of imageCategories) {
+        if (category.images?.data?.length > 0) {
+          await addImagesToDoc(category.images, category.title);
+        }
+      }
+
+      // Update the document with all content
+      doc.addSection({
+        children: children
+      });
+
+      // Generate Word document
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, `heritage-visit-${visitId}.docx`);
+      alert("Document generated successfully!");
+
+    } catch (error) {
+      console.error("Error generating document:", error);
+      alert(`Error generating document: ${error.message}. Please try again.`);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className={styles.container}>
       <Head>
         <title>Heritage - Visit Details</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style type="text/css" media="print">
+          {`
+            @page {
+              size: A4;
+              margin: 2cm;
+            }
+            @media print {
+              body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+            }
+          `}
+        </style>
       </Head>
 
       <div className={styles.header}>
         <h1 className={styles.title}>Visit Details</h1>
-        <button className={styles.editButton} onClick={handleEditClick}>
-          {isEditing ? "Save Changes" : "Edit Labels"}
-        </button>
+        <div className={styles.headerButtons}>
+          <button className={styles.editButton} onClick={handleEditClick}>
+            {isEditing ? "Save Changes" : "Edit Labels"}
+          </button>
+          <button className={styles.printButton} onClick={handlePrint}>
+            Print Report
+          </button>
+        </div>
       </div>
 
       <InfoSection
