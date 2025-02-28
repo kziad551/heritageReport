@@ -332,4 +332,112 @@
     background: none;
     font-weight: bold;
   }
+}
+
+.editableText {
+  position: relative;
+  cursor: default;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.editable.editableText:hover {
+  background-color: rgba(52, 152, 219, 0.1);
+}
+
+.editHint {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #7f8c8d;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.editable.editableText:hover .editHint {
+  opacity: 1;
+}
+
+.editableInputWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.editableInput {
+  width: 100%;
+  font-size: inherit;
+  font-family: inherit;
+  font-weight: inherit;
+  color: inherit;
+  background: white;
+  border: 2px solid #3498db;
+  border-radius: 4px;
+  padding: 6px 12px;
+  margin: -2px 0;
+  outline: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.editableInput:focus {
+  border-color: #2980b9;
+  box-shadow: 0 2px 12px rgba(52, 152, 219, 0.2);
+}
+
+.editingIndicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -20px;
+  text-align: center;
+  font-size: 12px;
+  color: #7f8c8d;
+  pointer-events: none;
+}
+
+.sectionTitle.editableText {
+  font-size: 1.5rem;
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #3498db;
+  font-weight: bold;
+}
+
+.label.editableText {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.25rem;
+}
+
+/* Remove previous input styles */
+.sectionTitleInput,
+.labelInput {
+  display: none;
+}
+
+/* Ensure proper z-index stacking */
+.editableInputWrapper {
+  z-index: 2;
+}
+
+.editableText {
+  z-index: 1;
+}
+
+/* Print styles */
+@media print {
+  .editHint,
+  .editingIndicator {
+    display: none !important;
+  }
+
+  .editableText {
+    padding: 0;
+    margin: 0;
+  }
 } 

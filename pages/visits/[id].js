@@ -93,18 +93,13 @@ const VisitDetails = ({ visit }) => {
     }));
   };
 
-  const handleInputFocus = (fieldId) => {
-    setEditingField(fieldId);
-  };
-
-  const handleInputBlur = () => {
-    setEditingField(null);
-  };
-
-  const handleInputKeyDown = (e) => {
+  const handleInputKeyDown = (e, onSave) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      e.target.blur();
+      onSave();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setEditingField(null);
     }
   };
 
@@ -116,19 +111,59 @@ const VisitDetails = ({ visit }) => {
     return customTitles[defaultTitle] || defaultTitle;
   };
 
-  const renderInput = (type, value, onChange, defaultValue) => {
+  const EditableText = ({ type, value, defaultValue, onChange, className }) => {
+    const [editValue, setEditValue] = useState(value);
+    const inputRef = useRef(null);
+
+    useEffect(() => {
+      if (editingField === defaultValue && inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, [editingField]);
+
+    const handleSave = () => {
+      onChange({ target: { value: editValue } }, defaultValue);
+      setEditingField(null);
+    };
+
+    const handleDoubleClick = () => {
+      setEditValue(value);
+      setEditingField(defaultValue);
+    };
+
+    if (editingField === defaultValue) {
+      return (
+        <div className={styles.editableInputWrapper}>
+          <input
+            ref={inputRef}
+            type="text"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={(e) => handleInputKeyDown(e, handleSave)}
+            className={`${className} ${styles.editableInput}`}
+            autoComplete="off"
+            spellCheck="false"
+          />
+          <div className={styles.editingIndicator}>
+            <span>Press Enter to save or Esc to cancel</span>
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <input
-        type="text"
-        value={value}
-        onChange={onChange}
-        onFocus={() => handleInputFocus(defaultValue)}
-        onBlur={handleInputBlur}
-        onKeyDown={handleInputKeyDown}
-        className={type === 'title' ? styles.sectionTitleInput : styles.labelInput}
-        autoComplete="off"
-        spellCheck="false"
-      />
+      <div
+        className={`${className} ${styles.editableText} ${isEditing ? styles.editable : ''}`}
+        onDoubleClick={isEditing ? handleDoubleClick : undefined}
+      >
+        {value}
+        {isEditing && (
+          <div className={styles.editHint}>
+            <span>Double-click to edit</span>
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -197,11 +232,13 @@ const VisitDetails = ({ visit }) => {
 
     return (
       <div className={styles.section}>
-        {isEditing ? (
-          renderInput('title', getTitle(title), (e) => handleTitleChange(e, title), title)
-        ) : (
-          <h3 className={styles.sectionTitle}>{getTitle(title)}</h3>
-        )}
+        <EditableText
+          type="title"
+          value={getTitle(title)}
+          defaultValue={title}
+          onChange={handleTitleChange}
+          className={styles.sectionTitle}
+        />
         <div className={styles.imageGrid}>
           {imageUrls.map((url, index) => (
             <div key={index} className={styles.imageContainer}>
@@ -238,21 +275,23 @@ const VisitDetails = ({ visit }) => {
 
   const InfoSection = ({ title, items }) => (
     <div className={styles.section}>
-      {isEditing ? (
-        renderInput('title', getTitle(title), (e) => handleTitleChange(e, title), title)
-      ) : (
-        <h3 className={styles.sectionTitle}>{getTitle(title)}</h3>
-      )}
+      <EditableText
+        type="title"
+        value={getTitle(title)}
+        defaultValue={title}
+        onChange={handleTitleChange}
+        className={styles.sectionTitle}
+      />
       <div className={styles.grid}>
         {items.map(([label, value]) => (
           <div key={label} className={styles.infoItem}>
-            <div className={styles.label}>
-              {isEditing ? (
-                renderInput('label', getLabel(label), (e) => handleLabelChange(e, label), label)
-              ) : (
-                getLabel(label)
-              )}
-            </div>
+            <EditableText
+              type="label"
+              value={getLabel(label)}
+              defaultValue={label}
+              onChange={handleLabelChange}
+              className={styles.label}
+            />
             <div className={styles.value}>{value || "N/A"}</div>
           </div>
         ))}
