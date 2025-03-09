@@ -234,10 +234,12 @@
   .container {
     padding: 0;
     margin: 0;
+    max-width: none;
   }
 
   .header {
-    padding: 20px 0;
+    padding: 5px 0;
+    margin-bottom: 5px;
     break-inside: avoid;
   }
 
@@ -252,65 +254,39 @@
   .section {
     break-inside: avoid;
     page-break-inside: avoid;
-    margin-bottom: 30px;
+    margin-bottom: 4px;
+    padding: 2px 0;
+    border: none;
+    border-bottom: 1px solid #eee;
     display: block;
   }
 
   .sectionTitle {
-    font-size: 18pt;
-    margin: 15px 0;
+    font-size: 10pt;
+    margin: 2px 0;
     color: #2E74B5;
     break-after: avoid;
     page-break-after: avoid;
+    border-bottom: 1px solid #2E74B5;
+    padding-bottom: 1px;
+    margin-bottom: 2px;
   }
 
   .grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
     break-inside: avoid;
     page-break-inside: avoid;
+    margin-top: 2px;
+    margin-bottom: 4px;
   }
 
   .infoItem {
     break-inside: avoid;
     page-break-inside: avoid;
-  }
-
-  .imageGrid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-    break-inside: avoid;
-    page-break-inside: avoid;
-    margin-bottom: 20px;
-  }
-
-  .imageContainer {
-    padding-bottom: 75%;
-    break-inside: avoid;
-    page-break-inside: avoid;
-    margin-bottom: 20px;
-  }
-
-  .imageWrapper {
-    height: 100%;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .image {
-    max-height: 100%;
-    object-fit: contain;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .title {
-    font-size: 24pt;
-    margin-bottom: 20px;
-    break-after: avoid;
-    page-break-after: avoid;
+    margin-bottom: 2px;
+    font-size: 8pt;
   }
 
   .label {
@@ -318,6 +294,7 @@
     color: #000;
     break-after: avoid;
     page-break-after: avoid;
+    margin-bottom: 1px;
   }
 
   .value {
@@ -326,11 +303,137 @@
     page-break-inside: avoid;
   }
 
+  .imageGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin: 0;
+    padding: 0;
+  }
+
+  .imageContainer {
+    position: relative;
+    width: 100%;
+    height: 120px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin: 0;
+    padding: 0;
+    border: none;
+    overflow: hidden;
+  }
+
+  .imageWrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .title {
+    font-size: 14pt;
+    margin-bottom: 5px;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
   /* Hide edit inputs when printing */
   .labelInput {
     border: none;
     background: none;
     font-weight: bold;
+  }
+
+  /* Optimize spacing for print */
+  .container,
+  .section,
+  .grid,
+  .infoItem,
+  .label,
+  .value,
+  .imageGrid,
+  .sectionTitle {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  /* Adjust spacing between sections */
+  .section + .section {
+    margin-top: 4px;
+  }
+
+  /* Make section titles more compact */
+  .section > .sectionTitle + .imageGrid,
+  .section > .sectionTitle + .grid {
+    margin-top: 2px;
+  }
+
+  /* Add page numbers */
+  @page {
+    size: A4;
+    margin: 0.3cm;
+  }
+
+  /* Ensure headers and footers don't repeat */
+  @page :first {
+    margin-top: 1cm;
+  }
+
+  /* Hide edit-related elements */
+  .editHint,
+  .editingIndicator {
+    display: none !important;
+  }
+
+  .editableText {
+    padding: 0;
+    margin: 0;
+  }
+
+  /* Remove all borders except bottom section separator */
+  .section:not(:last-child) {
+    border-bottom: 1px solid #eee;
+  }
+
+  /* Make section titles more compact to give more space to images */
+  .sectionTitle {
+    font-size: 9pt;
+    margin: 1px 0;
+    padding: 0;
+    color: #2E74B5;
+    border-bottom: 1px solid #2E74B5;
+  }
+
+  .section {
+    margin: 0 0 1px 0;
+    padding: 0;
+  }
+
+  /* Remove spacing between title and images */
+  .section > .sectionTitle + .imageGrid {
+    margin-top: 1px;
   }
 }
 
