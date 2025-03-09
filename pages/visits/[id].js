@@ -58,9 +58,11 @@ const VisitDetails = ({ visit }) => {
   useEffect(() => {
     const savedLabels = JSON.parse(localStorage.getItem("customLabels")) || {};
     const savedTitles = JSON.parse(localStorage.getItem("customTitles")) || {};
+    const savedRotations = JSON.parse(localStorage.getItem(`imageRotations_${visit?.data[0]?.id}`)) || {};
     setCustomLabels(savedLabels);
     setCustomTitles(savedTitles);
-  }, []);
+    setImageRotations(savedRotations);
+  }, [visit?.data[0]?.id]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -210,10 +212,15 @@ const VisitDetails = ({ visit }) => {
     });
     
     const handleRotate = (index, direction) => {
-      setImageRotations(prev => ({
-        ...prev,
-        [title + index]: ((prev[title + index] || 0) + (direction === 'left' ? -90 : 90)) % 360
-      }));
+      setImageRotations(prev => {
+        const newRotations = {
+          ...prev,
+          [title + index]: ((prev[title + index] || 0) + (direction === 'left' ? -90 : 90)) % 360
+        };
+        // Save to localStorage whenever rotation changes
+        localStorage.setItem(`imageRotations_${visit?.data[0]?.id}`, JSON.stringify(newRotations));
+        return newRotations;
+      });
     };
 
     useEffect(() => {
