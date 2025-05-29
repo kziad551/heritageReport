@@ -54,6 +54,7 @@ const VisitDetails = ({ visit }) => {
   const scrollPosition = useRef(0);
   const [editingField, setEditingField] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const savedLabels = JSON.parse(localStorage.getItem("customLabels")) || {};
@@ -614,6 +615,48 @@ const VisitDetails = ({ visit }) => {
     window.print();
   };
 
+  const handleDelete = async () => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete this visit (ID: ${visitId})? This action cannot be undone.`
+    );
+    
+    if (!confirmDelete) {
+      return;
+    }
+
+    setIsDeleting(true);
+    
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Authentication required. Please log in again.");
+        router.push("/login");
+        return;
+      }
+
+      const response = await fetch(`https://heritage.top-wp.com/api/visits/${visitId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete visit: ${response.status} ${response.statusText}`);
+      }
+
+      alert("Visit deleted successfully!");
+      router.push("/"); // Redirect to index page
+      
+    } catch (error) {
+      console.error("Error deleting visit:", error);
+      alert(`Error deleting visit: ${error.message}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className={styles.container}>
       <Head>
@@ -643,6 +686,13 @@ const VisitDetails = ({ visit }) => {
           </button>
           <button className={styles.printButton} onClick={handlePrint}>
             Print Report
+          </button>
+          <button 
+            className={styles.deleteButton} 
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? "Deleting..." : "Delete Visit"}
           </button>
         </div>
       </div>
