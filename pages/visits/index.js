@@ -119,7 +119,15 @@ const Visits = ({ initialVisits }) => {
         <table>
           <thead>
             <tr>
-              <th>#</th>
+              <th style={{
+                textAlign: 'center',
+                fontWeight: 'bold',
+                fontSize: '16px',
+                color: '#2c3e50',
+                padding: '12px 8px',
+                backgroundColor: '#e9ecef',
+                border: '1px solid #dee2e6'
+              }}>#</th>
               <th>User</th>
               <th>Visit Date</th>
               <th>Created</th>
@@ -133,7 +141,15 @@ const Visits = ({ initialVisits }) => {
           <tbody>
             {currentRows.map((v) => (
               <tr key={v.id}>
-                <td>{v.id}</td>
+                <td style={{
+                  textAlign: 'center',
+                  fontWeight: 'bold',
+                  fontSize: '16px',
+                  color: '#2c3e50',
+                  padding: '12px 8px',
+                  backgroundColor: '#f8f9fa',
+                  border: '1px solid #dee2e6'
+                }}>{v.id}</td>
                 <td>{v.attributes.user}</td>
                 <td>{v.attributes.visitdate}</td>
                 <td>{v.attributes.createdAt}</td>
@@ -173,29 +189,160 @@ const Visits = ({ initialVisits }) => {
 
         {/* pagination */}
         {totalPages > 1 && (
-          <div className="pagination">
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginTop: '20px',
+            gap: '8px'
+          }}>
             <button
+              style={{
+                padding: '8px 12px',
+                border: '1px solid #dee2e6',
+                backgroundColor: currentPage === 1 ? '#f8f9fa' : '#ffffff',
+                color: currentPage === 1 ? '#6c757d' : '#007bff',
+                borderRadius: '4px',
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                fontWeight: '500',
+                fontSize: '14px',
+                transition: 'all 0.2s ease'
+              }}
               disabled={currentPage === 1}
               onClick={() => setCurrentPage(1)}
+              onMouseEnter={(e) => {
+                if (currentPage !== 1) {
+                  e.target.style.backgroundColor = '#e9ecef';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (currentPage !== 1) {
+                  e.target.style.backgroundColor = '#ffffff';
+                }
+              }}
             >
               {"<<"}
             </button>
             <button
+              style={{
+                padding: '8px 12px',
+                border: '1px solid #dee2e6',
+                backgroundColor: currentPage === 1 ? '#f8f9fa' : '#ffffff',
+                color: currentPage === 1 ? '#6c757d' : '#007bff',
+                borderRadius: '4px',
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                fontWeight: '500',
+                fontSize: '14px',
+                transition: 'all 0.2s ease'
+              }}
               disabled={currentPage === 1}
               onClick={() => setCurrentPage((p) => p - 1)}
+              onMouseEnter={(e) => {
+                if (currentPage !== 1) {
+                  e.target.style.backgroundColor = '#e9ecef';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (currentPage !== 1) {
+                  e.target.style.backgroundColor = '#ffffff';
+                }
+              }}
             >
               {"<"}
             </button>
-            <span>{currentPage}</span>
+            
+            {/* Page numbers */}
+            {(() => {
+              const pageNumbers = [];
+              const startPage = Math.max(1, currentPage - 1);
+              const endPage = Math.min(totalPages, startPage + 2);
+              
+              for (let i = startPage; i <= endPage; i++) {
+                pageNumbers.push(
+                  <button
+                    key={i}
+                    style={{
+                      padding: '8px 12px',
+                      border: '1px solid #dee2e6',
+                      backgroundColor: i === currentPage ? '#007bff' : '#ffffff',
+                      color: i === currentPage ? 'white' : '#007bff',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: i === currentPage ? 'bold' : '500',
+                      fontSize: '14px',
+                      minWidth: '40px',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onClick={() => setCurrentPage(i)}
+                    onMouseEnter={(e) => {
+                      if (i !== currentPage) {
+                        e.target.style.backgroundColor = '#e9ecef';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (i !== currentPage) {
+                        e.target.style.backgroundColor = '#ffffff';
+                      }
+                    }}
+                  >
+                    {i}
+                  </button>
+                );
+              }
+              return pageNumbers;
+            })()}
+            
             <button
+              style={{
+                padding: '8px 12px',
+                border: '1px solid #dee2e6',
+                backgroundColor: currentPage === totalPages ? '#f8f9fa' : '#ffffff',
+                color: currentPage === totalPages ? '#6c757d' : '#007bff',
+                borderRadius: '4px',
+                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                fontWeight: '500',
+                fontSize: '14px',
+                transition: 'all 0.2s ease'
+              }}
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage((p) => p + 1)}
+              onMouseEnter={(e) => {
+                if (currentPage !== totalPages) {
+                  e.target.style.backgroundColor = '#e9ecef';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (currentPage !== totalPages) {
+                  e.target.style.backgroundColor = '#ffffff';
+                }
+              }}
             >
               {">"}
             </button>
             <button
+              style={{
+                padding: '8px 12px',
+                border: '1px solid #dee2e6',
+                backgroundColor: currentPage === totalPages ? '#f8f9fa' : '#ffffff',
+                color: currentPage === totalPages ? '#6c757d' : '#007bff',
+                borderRadius: '4px',
+                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                fontWeight: '500',
+                fontSize: '14px',
+                transition: 'all 0.2s ease'
+              }}
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage(totalPages)}
+              onMouseEnter={(e) => {
+                if (currentPage !== totalPages) {
+                  e.target.style.backgroundColor = '#e9ecef';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (currentPage !== totalPages) {
+                  e.target.style.backgroundColor = '#ffffff';
+                }
+              }}
             >
               {">>"}
             </button>
